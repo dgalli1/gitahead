@@ -397,6 +397,12 @@ MenuBar::MenuBar(QWidget *parent)
     view()->fetch();
   });
 
+  mFetchAll = remote->addAction(tr("Fetch All"));
+  mFetchAll->setShortcut(tr("Ctrl+Shift+Alt+A"));
+  connect(mFetchAll, &QAction::triggered, [this] {
+    view()->fetchAll();
+  });
+
   mFetchFrom = remote->addAction(tr("Fetch From..."));
   mFetchFrom->setShortcut(tr("Ctrl+Shift+F"));
   connect(mFetchFrom, &QAction::triggered, [this] {
@@ -633,7 +639,9 @@ MenuBar::MenuBar(QWidget *parent)
   QString name = QCoreApplication::applicationName();
   QAction *about = help->addAction(tr("About %1").arg(name));
   about->setMenuRole(QAction::AboutRole);
-  connect(about, &QAction::triggered, &AboutDialog::openSharedInstance);
+  connect(about, &QAction::triggered, [] {
+    AboutDialog::openSharedInstance();
+  });
 
   QAction *update = help->addAction(tr("Check For Updates..."));
   update->setMenuRole(QAction::ApplicationSpecificRole);

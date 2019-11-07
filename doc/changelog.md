@@ -1,3 +1,61 @@
+### v2.5.11 - 2019-10-30
+
+#### Added
+
+* Added context menu item to remove remote account from the sidebar.
+* Added usage reporting setting to the 'General' preferences panel.
+* Remember sidebar remote account expansion state.
+* Unique sidebar and open tab names in the same way as recent repositories.
+* Added 'Fetch All' item to 'Remote' menu.
+
+#### Fixed
+
+* Fixed failure to launch external edit tools with spaces in their path.
+* Disallow pasting rich text into the commit editor.
+* (Win) Fixed several issues relating to symlinks.
+
+#### Changed
+
+* Allow more than 99 columns in line length plugin interface.
+* Clarify copyright statement in the about dialog.
+* (Mac) Enable the hardened runtime to allow notarization on macOS Catalina.
+
+----
+
+### v2.5.10 - 2019-08-29
+
+#### Added
+
+* Automatically switch between light and dark mode on macOS Mojave when using the native theme.
+
+#### Fixed
+
+* Fixed stash performance issue.
+* Fixed crash on LFS-not-found error.
+* Avoid reporting the LFS-not-found error multiple times.
+* Fixed possible failure to look up the correct SSH identity file when the config file contains a 'HostName' entry.
+* Fixed failure to draw tree view badges in some cases.
+* Add missing dark mode colors for some lexers that reference colors directly (e.g. markdown).
+
+----
+
+### v2.5.9 - 2019-08-10
+
+#### Fixed
+
+* Updated Bitbucket integration to use v2.0 API.
+* Avoid opening a new tab for repositories that are already open.
+* Changed new branch dialog default start point to the HEAD instead of the first branch in the reference list.
+* Fix regression in staging submodules.
+* Fix crash on right-click on clean status diff.
+* Fix regression in double-clicking to clone a repository.
+
+#### Changed
+
+* Changed wording of prompt-to-amend dialog to clarify its purpose.
+
+----
+
 ### v2.5.8 - 2019-07-17
 
 #### Added

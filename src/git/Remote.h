@@ -20,7 +20,7 @@
 struct git_cred;
 struct git_oid;
 struct git_remote;
-struct git_transfer_progress;
+struct git_indexer_progress;
 
 namespace git {
 
@@ -45,9 +45,14 @@ public:
       Update
     };
 
-    Callbacks(const Repository &repo = Repository())
-      : mRepo(repo)
+    Callbacks(const QString &url, const Repository &repo = Repository())
+      : mUrl(url), mRepo(repo)
     {}
+
+    QString url() const
+    {
+      return mUrl;
+    }
 
     State state() const
     {
@@ -139,7 +144,7 @@ public:
       void *payload);
 
     static int transfer(
-      const git_transfer_progress *stats,
+      const git_indexer_progress *stats,
       void *payload);
 
     static int update(
@@ -150,11 +155,12 @@ public:
 
     static int url(
       git_buf *out,
-      git_remote *remote,
-      git_direction direction,
+      const char *url,
+      int direction,
       void *payload);
 
   protected:
+    QString mUrl;
     Repository mRepo;
     State mState = Transfer;
     QSet<QString> mAgentNames;

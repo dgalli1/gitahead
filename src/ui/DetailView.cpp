@@ -12,7 +12,6 @@
 #include "DiffWidget.h"
 #include "MenuBar.h"
 #include "TreeWidget.h"
-#include "app/Application.h"
 #include "git/Branch.h"
 #include "git/Commit.h"
 #include "git/Diff.h"
@@ -60,7 +59,7 @@ const Qt::TextInteractionFlags kTextFlags =
 
 QString brightText(const QString &text)
 {
-  return kAltFmt.arg(Application::theme()->windowBrightText().name(), text);
+  return kAltFmt.arg(QPalette().color(QPalette::BrightText).name(), text);
 }
 
 class MessageLabel : public QTextEdit
@@ -197,13 +196,13 @@ private:
   int mSpacing;
 };
 
-class CommitDetail : public QWidget
+class CommitDetail : public QFrame
 {
   Q_OBJECT
 
 public:
   CommitDetail(QWidget *parent = nullptr)
-    : QWidget(parent)
+    : QFrame(parent)
   {
     mAuthorDate = new AuthorDate(this);
 
@@ -455,11 +454,13 @@ private:
   QFutureWatcher<QString> mWatcher;
 };
 
-class CommitEditor : public QWidget
+class CommitEditor : public QFrame
 {
+  Q_OBJECT
+
 public:
   CommitEditor(const git::Repository &repo, QWidget *parent = nullptr)
-    : QWidget(parent)
+    : QFrame(parent)
   {
     QLabel *label = new QLabel(tr("<b>Commit Message:</b>"), this);
     mStatus = new QLabel(QString(), this);
@@ -470,6 +471,7 @@ public:
     labelLayout->addWidget(mStatus);
 
     mMessage = new QTextEdit(this);
+    mMessage->setAcceptRichText(false);
     mMessage->setObjectName("MessageEditor");
     mMessage->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
     connect(mMessage, &QTextEdit::textChanged, [this] {

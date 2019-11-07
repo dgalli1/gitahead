@@ -402,16 +402,19 @@ RepoView::RepoView(const git::Repository &repo, MainWindow *parent)
     setLogVisible(false);
   });
 
-  connect(notifier, &git::RepositoryNotifier::indexStageError, [this] {
+  connect(notifier, &git::RepositoryNotifier::indexStageError, this, [this] {
     error(mLogRoot, "stage");
   });
 
-  connect(notifier, &git::RepositoryNotifier::lfsNotFound, [this] {
+  QObject *context = new QObject(this);
+  connect(notifier, &git::RepositoryNotifier::lfsNotFound,
+  context, [this, context] {
     QString text =
       tr("Git LFS was not found on the PATH. "
          "<a href='https://git-lfs.github.com'>"
          "Install Git LFS</a> to use LFS integration.");
     mLogRoot->addEntry(LogEntry::Error, text);
+    delete context; // Disconnect after the first error.
   });
 
   // Automatically hide the log when the model changes.
@@ -945,6 +948,24 @@ void RepoView::startFetchTimer()
 
   fetch(git::Remote(), false, false);
   mFetchTimer.start(config.value<int>("autofetch.minutes", minutes) * 60 * 1000);
+}
+
+void RepoView::fetchAll()
+{
+  QList<git::Remote> remotes = mRepo.remotes();
+  if (remotes.isEmpty())
+    return;
+
+  if (remotes.size() == 1) {
+    fetch();
+    return;
+  }
+
+  // Queue up all remotes to fetch them serially.
+  QString text = tr("%1 remotes").arg(remotes.size());
+  LogEntry *entry = addLogEntry(text, tr("Fetch All"));
+  foreach (const git::Remote &remote, remotes)
+    fetch(remote, false, true, entry);
 }
 
 QFuture<git::Result> RepoView::fetch(
@@ -1801,7 +1822,7 @@ void RepoView::amendCommit()
 
     case 1:
       // Reset to parent commit.
-      promptToReset(parents.first(), GIT_RESET_SOFT, commit.message());
+      promptToReset(parents.first(), GIT_RESET_SOFT, commit);
       break;
 
     default:
@@ -2073,20 +2094,23 @@ void RepoView::promptToTag(const git::Commit &commit)
 void RepoView::promptToReset(
   const git::Commit &commit,
   git_reset_t type,
-  const QString &message)
+  const git::Commit &commitToAmend)
 {
   git::Branch head = mRepo.head();
   if (!head.isValid()) {
-    LogEntry *entry = addLogEntry(tr("<i>no branch</i>"), tr("Reset"));
+    QString title = commitToAmend ? tr("Amend") : tr("Reset");
+    LogEntry *entry = addLogEntry(tr("<i>no branch</i>"), title);
     entry->addEntry(LogEntry::Error, tr("You are not currently on a branch."));
     return;
   }
 
-  QString title = tr("Reset?");
-  QString text = tr("Are you sure you want to reset '%1' to '%2'?");
+  QString id = commitToAmend ? commitToAmend.shortId() : commit.shortId();
+  QString title = commitToAmend ? tr("Amend?") : tr("Reset?");
+  QString text = commitToAmend ?
+    tr("Are you sure you want to amend '%1'?").arg(id) :
+    tr("Are you sure you want to reset '%1' to '%2'?").arg(head.name(), id);
   QMessageBox *dialog = new QMessageBox(
-    QMessageBox::Warning, title, text.arg(head.name(), commit.shortId()),
-    QMessageBox::Cancel, this);
+    QMessageBox::Warning, title, text, QMessageBox::Cancel, this);
   dialog->setAttribute(Qt::WA_DeleteOnClose);
 
   QString info;
@@ -2109,27 +2133,33 @@ void RepoView::promptToReset(
 
   dialog->setInformativeText(info);
 
-  QPushButton *accept = dialog->addButton(tr("Reset"), QMessageBox::AcceptRole);
-  connect(accept, &QPushButton::clicked, [this, commit, type, message] {
-    reset(commit, type);
+  QString buttonText = commitToAmend ? tr("Amend") : tr("Reset");
+  QPushButton *accept = dialog->addButton(buttonText, QMessageBox::AcceptRole);
+  connect(accept, &QPushButton::clicked, [this, commit, type, commitToAmend] {
+    reset(commit, type, commitToAmend);
 
     // Pre-populate the commit message editor.
-    mDetails->setCommitMessage(message);
+    if (commitToAmend)
+      mDetails->setCommitMessage(commitToAmend.message());
   });
 
   dialog->open();
 }
 
-void RepoView::reset(const git::Commit &commit, git_reset_t type)
+void RepoView::reset(
+  const git::Commit &commit,
+  git_reset_t type,
+  const git::Commit &commitToAmend)
 {
   git::Reference head = mRepo.head();
   Q_ASSERT(head.isValid());
 
+  QString title = commitToAmend ? tr("Amend") : tr("Reset");
   QString text = tr("%1 to %2").arg(head.name(), commit.link());
-  LogEntry *entry = addLogEntry(text, tr("Reset"));
+  LogEntry *entry = addLogEntry(text, title);
 
   if (!commit.reset(type))
-    error(entry, tr("reset"), head.name());
+    error(entry, commitToAmend ? tr("amend") : tr("reset"), head.name());
 }
 
 void RepoView::updateSubmodules(

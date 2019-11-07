@@ -924,10 +924,8 @@ public:
           QPointF(-xi1, yi1)
         });
 
-        if (starred) {
-          QPalette palette = Application::theme()->stars();
-          painter->setBrush(palette.color(QPalette::Base));
-        }
+        if (starred)
+          painter->setBrush(Application::theme()->star());
 
         painter->setPen(QPen(bright, 1.25));
         painter->drawPolygon(polygon.translated(x, y));
@@ -1330,10 +1328,11 @@ void CommitList::contextMenuEvent(QContextMenuEvent *event)
 
     // clean
     QStringList untracked;
-    git::Diff diff = status();
-    for (int i = 0; i < diff.count(); i++) {
-      if (diff.status(i) == GIT_DELTA_UNTRACKED)
-        untracked.append(diff.name(i));
+    if (git::Diff diff = status()) {
+      for (int i = 0; i < diff.count(); i++) {
+        if (diff.status(i) == GIT_DELTA_UNTRACKED)
+          untracked.append(diff.name(i));
+      }
     }
 
     QAction *clean = menu.addAction(tr("Remove Untracked Files"),
